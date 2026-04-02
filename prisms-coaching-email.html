@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prisms · Post-Coaching Email Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pink: #DB1873; --pink-dark: #b8145f; --pink-light: #fdf0f6;
+      --navy: #353C78; --navy-dark: #272d5e; --navy-light: #eef0f8;
+      --coral: #E3673B; --coral-dark: #c4532a; --coral-light: #fdf2ee;
+      --gray-50: #F9FAFB; --gray-100: #F3F4F6; --gray-200: #E5E7EB;
+      --gray-300: #D1D5DB; --gray-400: #9CA3AF; --gray-600: #4B5563;
+      --gray-700: #374151; --gray-900: #111827;
+      --green: #16A34A; --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.10);
+      --header-h: 52px;
+    }
+    body { font-family: 'Roboto', -apple-system, sans-serif; background: var(--pink); color: var(--gray-900); font-size: 15px; }
+
+    .field label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-700); margin-bottom: 5px; }
+    .field input, .field textarea { width: 100%; border: 1px solid var(--gray-200); border-radius: 8px; padding: 9px 13px; font-size: 14px; font-family: 'Roboto', sans-serif; color: var(--gray-900); transition: border-color 0.15s, box-shadow 0.15s; background: white; }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(53,60,120,0.12); }
+    .field textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+
+    /* ─── App Shell ───────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    header { background: var(--navy); padding: 0 24px; height: var(--header-h); display: flex; align-items: center; gap: 10px; flex-shrink: 0; box-shadow: 0 2px 10px rgba(53,60,120,0.25); z-index: 100; }
+    .header-brand { font-size: 17px; font-weight: 700; color: white; letter-spacing: -0.3px; }
+    .header-sep { color: rgba(255,255,255,0.35); }
+    .header-title { font-size: 14px; color: rgba(255,255,255,0.7); font-weight: 500; }
+
+    /* ─── Two-pane layout ─────────────────────────────────── */
+    .app-body { flex: 1; display: grid; grid-template-columns: 1fr 420px; overflow: hidden; }
+
+    /* ─── Form Pane ───────────────────────────────────────── */
+    .form-pane { background: var(--pink); overflow-y: auto; padding: 22px 18px 60px; }
+
+    /* ─── Visit Toggle ────────────────────────────────────── */
+    .visit-toggle { display: flex; background: rgba(0,0,0,0.15); border-radius: 10px; padding: 4px; margin-bottom: 18px; gap: 3px; }
+    .vtoggle-btn { flex: 1; padding: 9px 10px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: 'Roboto', sans-serif; cursor: pointer; background: transparent; color: rgba(255,255,255,0.7); transition: background 0.15s, color 0.15s; }
+    .vtoggle-btn.active { background: white; color: var(--navy); box-shadow: 0 1px 6px rgba(0,0,0,0.12); }
+
+    /* ─── Cards ───────────────────────────────────────────── */
+    .card { background: white; border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow); }
+    .card-header { margin-bottom: 16px; }
+    .card-number { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--navy); color: white; font-size: 11px; font-weight: 700; border-radius: 50%; margin-bottom: 6px; }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .card-desc { font-size: 12.5px; color: var(--gray-600); line-height: 1.5; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .hint { font-size: 11.5px; color: var(--gray-400); margin-top: 4px; line-height: 1.4; }
+
+    /* ─── Opening picker ──────────────────────────────────── */
+    .opening-options { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+    .opening-option { display: flex; align-items: flex-start; gap: 10px; padding: 10px 13px; border: 1.5px solid var(--gray-200); border-radius: 8px; cursor: pointer; user-select: none; transition: border-color 0.12s, background 0.12s; }
+    .opening-option:hover { border-color: var(--pink); background: var(--pink-light); }
+    .opening-option.active { border-color: var(--pink); background: var(--pink-light); }
+    .opening-option input[type="radio"] { accent-color: var(--pink); width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+    .opening-option span { font-size: 13px; color: var(--gray-700); line-height: 1.5; }
+
+    /* ─── Checkbox pills ──────────────────────────────────── */
+    .cb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 7px; margin-bottom: 4px; }
+    .cb-pill { display: flex; align-items: center; padding: 8px 10px; border: 1.5px solid var(--gray-200); border-radius: 8px; cursor: pointer; user-select: none; transition: border-color 0.12s, background 0.12s; gap: 0; }
+    .cb-pill:hover { border-color: var(--pink); background: var(--pink-light); }
+    .cb-pill.active { border-color: var(--pink); background: var(--pink-light); }
+    .cb-pill input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--pink); flex-shrink: 0; cursor: pointer; margin-right: 7px; }
+    .cb-pill .cb-label { font-size: 12.5px; font-weight: 500; color: var(--gray-700); flex: 1; line-height: 1.3; }
+    .info-btn { background: none; border: none; cursor: pointer; padding: 2px 3px; color: var(--gray-400); font-size: 13px; line-height: 1; border-radius: 4px; flex-shrink: 0; transition: color 0.12s; }
+    .info-btn:hover { color: var(--navy); }
+
+    /* ─── Area detail blocks ──────────────────────────────── */
+    .area-block { margin-top: 12px; background: var(--gray-50); border: 1px solid var(--gray-200); border-left: 3px solid var(--pink); border-radius: 8px; padding: 14px; }
+    .area-block.focus-block { border-left-color: var(--coral); }
+    .area-block-title { font-size: 12.5px; font-weight: 700; color: var(--pink); margin-bottom: 10px; }
+    .area-block.focus-block .area-block-title { color: var(--coral); }
+    .area-block .field label { color: var(--gray-600); font-size: 12px; }
+    .area-block .field input, .area-block .field textarea { background: white; font-size: 13px; }
+
+    /* ─── Sentence starters ───────────────────────────────── */
+    .sentence-starter { font-size: 11.5px; font-weight: 600; color: var(--coral); font-style: italic; margin-bottom: 4px; }
+
+    /* ─── Tip buttons / panels ────────────────────────────── */
+    .label-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .label-row label { margin-bottom: 0; }
+    .tip-btn { background: none; border: 1.5px solid var(--gray-200); border-radius: 50%; width: 17px; height: 17px; font-size: 9px; font-weight: 700; cursor: pointer; color: var(--gray-400); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color 0.12s, color 0.12s, background 0.12s; padding: 0; }
+    .tip-btn:hover, .tip-btn.active { border-color: var(--coral); color: var(--coral); background: var(--coral-light); }
+    .tip-panel { display: none; background: #fffdf9; border: 1px solid #f5dfc8; border-left: 3px solid var(--coral); border-radius: 8px; padding: 10px 12px; margin-bottom: 7px; font-size: 12px; color: var(--gray-700); line-height: 1.6; }
+    .tip-panel.open { display: block; }
+    .tip-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--coral); margin-bottom: 5px; }
+    .tip-be-specific { font-size: 11px; color: var(--coral); font-style: italic; margin-bottom: 6px; margin-top: -2px; }
+    .tip-panel ul { padding-left: 14px; }
+    .tip-panel ul li { margin-bottom: 3px; }
+    .power-move { margin-top: 7px; padding: 7px 9px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; font-size: 11.5px; color: #92400e; line-height: 1.5; }
+    .power-move-label { display: block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #b45309; margin-bottom: 2px; }
+    .be-specific-hint { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+    /* ─── Autocomplete ────────────────────────────────────── */
+    .ac-wrap { position: relative; }
+    .ac-dropdown { display: none; position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: white; border: 1px solid var(--gray-200); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 50; max-height: 220px; overflow-y: auto; }
+    .ac-dropdown.open { display: block; }
+    .ac-group-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-400); padding: 8px 12px 4px; }
+    .ac-item { padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--gray-700); transition: background 0.1s; }
+    .ac-item:hover, .ac-item.highlighted { background: var(--navy-light); color: var(--navy); }
+
+    /* ─── Tutorial outcomes ───────────────────────────────── */
+    .outcome-block { border: 1.5px solid var(--gray-200); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; transition: border-color 0.12s, background 0.12s; }
+    .outcome-block.active { border-color: var(--pink); background: var(--pink-light); }
+    .outcome-check-row { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+    .outcome-check-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--pink); flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+    .outcome-label { font-size: 13px; font-weight: 500; color: var(--gray-700); line-height: 1.45; }
+    .outcome-obs { margin-top: 10px; display: none; }
+    .outcome-obs.visible { display: block; }
+    .outcome-obs textarea { background: white; }
+
+    /* ─── Buttons ─────────────────────────────────────────── */
+    .btn-copy { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--navy); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Roboto', sans-serif; cursor: pointer; transition: background 0.15s; }
+    .btn-copy:hover { background: var(--navy-dark); }
+    .btn-copy.copied { background: var(--green); }
+    .btn-primary { width: 100%; padding: 13px; background: linear-gradient(135deg, var(--pink) 0%, var(--coral) 100%); color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; font-size: 15px; font-weight: 700; font-family: 'Roboto', sans-serif; cursor: pointer; transition: opacity 0.15s; box-shadow: 0 3px 12px rgba(219,24,115,0.30); }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-start-over { width: 100%; padding: 11px; background: white; color: var(--gray-600); border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'Roboto', sans-serif; cursor: pointer; transition: border-color 0.12s, color 0.12s, background 0.12s; margin-top: 6px; }
+    .btn-start-over:hover { border-color: #DC2626; color: #DC2626; background: #FEF2F2; }
+    .btn-resync { background: none; border: 1px solid var(--gray-200); border-radius: 5px; font-size: 11px; padding: 3px 8px; cursor: pointer; color: var(--gray-600); font-family: 'Roboto', sans-serif; }
+    .btn-resync:hover { background: var(--gray-50); }
+
+    /* ─── Email Pane ──────────────────────────────────────── */
+    .email-pane { background: white; border-left: 1px solid var(--gray-200); display: flex; flex-direction: column; overflow: hidden; }
+    .email-pane-header { padding: 13px 18px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .email-pane-title { font-size: 13px; font-weight: 700; color: var(--gray-700); }
+    .email-pane-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+    .email-subject { padding: 8px 18px; border-bottom: 1px solid var(--gray-100); font-size: 12px; font-weight: 600; color: var(--gray-600); background: var(--gray-50); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Roboto', sans-serif; }
+    #email-text { flex: 1; width: 100%; border: none; resize: none; padding: 18px 20px; font-size: 13.5px; line-height: 1.75; color: var(--gray-900); font-family: 'Roboto', sans-serif; background: white; outline: none; }
+    #email-text::placeholder { color: var(--gray-300); font-style: italic; font-size: 13px; }
+    .email-pane-footer { padding: 9px 16px; border-top: 1px solid var(--gray-100); flex-shrink: 0; display: flex; align-items: center; gap: 8px; min-height: 42px; }
+    #resync-notice { display: none; align-items: center; gap: 7px; font-size: 11.5px; color: var(--gray-400); }
+
+    /* ─── Tooltip modal ───────────────────────────────────── */
+    #tooltip-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+    #tooltip-overlay.open { display: flex; }
+    .tooltip-modal { background: white; border-radius: 14px; padding: 26px; max-width: 450px; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,0.20); position: relative; }
+    .tooltip-modal-tag { display: inline-block; background: var(--navy-light); color: var(--navy); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; margin-bottom: 8px; }
+    .tooltip-modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--navy); }
+    .tooltip-modal p { font-size: 13.5px; color: var(--gray-700); line-height: 1.6; margin-bottom: 11px; }
+    .tooltip-modal .look-for { background: var(--gray-50); border-left: 3px solid var(--coral); border-radius: 6px; padding: 11px 13px; font-size: 12.5px; color: var(--gray-700); line-height: 1.6; }
+    .tooltip-modal .look-for strong { color: var(--coral); display: block; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .tooltip-close { position: absolute; top: 14px; right: 14px; background: var(--gray-100); border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; color: var(--gray-600); transition: background 0.12s; }
+    .tooltip-close:hover { background: var(--gray-200); }
+
+    /* ─── Collapsible cards ───────────────────────────────── */
+    .card-header { cursor: pointer; user-select: none; position: relative; padding-right: 32px; }
+    .card-chevron { position: absolute; right: 0; top: 50%; transform: translateY(-50%); transition: transform 0.2s; color: var(--gray-400); line-height: 0; }
+    .card.collapsed .card-chevron { transform: translateY(-50%) rotate(-90deg); }
+    .card.collapsed > *:not(.card-header) { display: none !important; }
+
+    /* ─── Mobile ──────────────────────────────────────────── */
+    @media (max-width: 820px) {
+      #app { height: auto; overflow: visible; }
+      .app-body { grid-template-columns: 1fr; overflow: visible; }
+      .form-pane { overflow-y: visible; padding-bottom: 24px; }
+      .email-pane { border-left: none; border-top: 3px solid var(--pink); max-height: 60vh; }
+      #email-text { min-height: 280px; }
+      .vtoggle-btn { min-height: 44px; padding: 12px 10px; }
+      .cb-pill { min-height: 44px; }
+      .opening-option { padding: 13px; }
+      .btn-primary { min-height: 48px; }
+      .btn-start-over { min-height: 44px; }
+      .btn-copy { min-height: 44px; padding: 10px 18px; }
+    }
+    @media (max-width: 500px) {
+      .row-2 { grid-template-columns: 1fr; }
+      .card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Tooltip Modal ─────────────────────────────────────── -->
+<div id="tooltip-overlay" onclick="if(event.target===this) closeTooltip()">
+  <div class="tooltip-modal">
+    <button class="tooltip-close" onclick="closeTooltip()">✕</button>
+    <div class="tooltip-modal-tag">Coaching Area</div>
+    <h3 id="tt-title"></h3>
+    <p id="tt-desc"></p>
+    <div class="look-for"><strong>Look for</strong><span id="tt-look"></span></div>
+  </div>
+</div>
+
+<!-- ─── App ──────────────────────────────────────────────── -->
+<div id="app">
+  <header>
+    <span class="header-brand">Prisms</span>
+    <span class="header-sep">·</span>
+    <span class="header-title">Coaching Email Generator</span>
+  </header>
+
+  <div class="app-body">
+
+    <!-- ══ FORM PANE ══════════════════════════════════════ -->
+    <div class="form-pane" id="form-pane">
+
+      <!-- Visit type toggle -->
+      <div class="visit-toggle">
+        <button class="vtoggle-btn active" id="toggle-coaching" onclick="setVisitType('coaching')">Post-Coaching Visit</button>
+        <button class="vtoggle-btn" id="toggle-tutorial" onclick="setVisitType('tutorial')">Tutorial Coaching</button>
+      </div>
+
+      <!-- 1 · Visit Details -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-number">1</div>
+          <div class="card-title">Visit Details</div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label>Teacher Name *</label><input type="text" id="teacher-name" placeholder="e.g. Ms. Johnson" /></div>
+          <div class="field"><label>School</label><input type="text" id="school" placeholder="e.g. Lincoln Middle School" /></div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label>Your Name (Coach) *</label><input type="text" id="coach-name" placeholder="Your name" /></div>
+          <div class="field"><label>Date of Visit</label><input type="date" id="visit-date" /></div>
+        </div>
+      </div>
+
+      <!-- 2 · Opening Line -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-number">2</div>
+          <div class="card-title">Opening Line</div>
+          <div class="card-desc">Pick an opening or write your own.</div>
+        </div>
+        <div class="opening-options" id="opening-options">
+          <label class="opening-option active"><input type="radio" name="opening" value="0" checked /><span>Thank you for welcoming me into your classroom and for your willingness to try new instructional routines with Prisms. It was a joy working alongside you and your students.</span></label>
+          <label class="opening-option"><input type="radio" name="opening" value="1" /><span>It was such a pleasure being in your classroom today. The energy between you and your students was palpable, and I am grateful you trusted me to partner with you in this work.</span></label>
+          <label class="opening-option"><input type="radio" name="opening" value="2" /><span>Thank you for having me today. Watching you and your students engage with Prisms was a real highlight. I can see how much intentionality you bring to your practice.</span></label>
+          <label class="opening-option"><input type="radio" name="opening" value="3" /><span>What a visit! Thank you for opening your classroom and for your commitment to bringing your students rich, immersive learning experiences. I left genuinely inspired.</span></label>
+          <label class="opening-option"><input type="radio" name="opening" value="4" /><span>Thank you for the warm welcome today. It is always a privilege to be in your classroom, and I appreciate your openness to trying new things and your dedication to your students.</span></label>
+          <label class="opening-option"><input type="radio" name="opening" value="custom" /><span>Write my own...</span></label>
+        </div>
+        <div id="custom-opening-field" style="display:none">
+          <div class="field"><label>Your opening paragraph</label><textarea id="custom-opening-text" rows="3" placeholder="Write a custom opening..."></textarea></div>
+        </div>
+      </div>
+
+      <!-- 3 · Highlights -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-number">3</div>
+          <div class="card-title" id="highlights-title">Highlights</div>
+          <div class="card-desc" id="highlights-desc">Describe one or two impactful moments you observed. Ground it in a specific student or teacher action and explain why it mattered for learning.</div>
+        </div>
+        <div class="field">
+          <label id="highlights-label">Impactful moment(s)</label>
+          <textarea id="highlights" rows="4" placeholder="e.g. During the synthesis discussion, Marcus challenged a classmate's interpretation of the graph — he said 'the slope can't be negative here because the car is still moving forward.' The VR experience gave him the conceptual language to make that argument. That kind of student-to-student discourse is exactly what the Prisms model is designed to produce."></textarea>
+          <div class="hint">Be specific: name a moment, a student, or a teacher action. Avoid generic praise like "students were engaged."</div>
+        </div>
+      </div>
+
+      <!-- 4 · Glows (coaching only) -->
+      <div class="card coaching-only" id="section-excellence">
+        <div class="card-header">
+          <div class="card-number">4</div>
+          <div class="card-title">Areas of Excellence</div>
+          <div class="card-desc">Select routines where the teacher excelled. Click <strong>ⓘ</strong> to see definitions.</div>
+        </div>
+        <div class="cb-grid" id="exc-grid"></div>
+        <div id="exc-details"></div>
+      </div>
+
+      <!-- 5 · Grows (coaching only) -->
+      <div class="card coaching-only" id="section-focus">
+        <div class="card-header">
+          <div class="card-number">5</div>
+          <div class="card-title">Area of Focus</div>
+          <div class="card-desc">Select one routine to prioritize for the next lesson. Click <strong>ⓘ</strong> for definitions.</div>
+        </div>
+        <div class="cb-grid" id="foc-grid"></div>
+        <div id="foc-details"></div>
+      </div>
+
+      <!-- 4 · Tutorial Routines (tutorial only) -->
+      <div class="card tutorial-only" id="section-tutorial" style="display:none">
+        <div class="card-header">
+          <div class="card-number">4</div>
+          <div class="card-title">Key Instructional Routines</div>
+          <div class="card-desc">These are pre-checked for a successful tutorial. Uncheck anything that didn't happen, and expand any routine to add a specific observation.</div>
+        </div>
+        <div id="tutorial-routines"></div>
+      </div>
+
+      <!-- 6 · Next Steps (post-coaching only) -->
+      <div class="card coaching-only" id="section-next-steps">
+        <div class="card-header">
+          <div class="card-number" id="next-steps-num">6</div>
+          <div class="card-title">Next Steps</div>
+          <div class="card-desc">Content module and/or skill builder to recommend. Start typing to search.</div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Content Module</label>
+            <div class="ac-wrap">
+              <input type="text" id="module-rec" placeholder="e.g. Linear Functions" autocomplete="off" />
+              <div class="ac-dropdown" id="module-ac"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Skill Builder</label>
+            <div class="ac-wrap">
+              <input type="text" id="sb-rec" placeholder="e.g. Rate of Change" autocomplete="off" />
+              <div class="ac-dropdown" id="sb-ac"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5/7 · Resources -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-number" id="resources-num">7</div>
+          <div class="card-title">Resources</div>
+          <div class="card-desc">Links to module toolkit, Teacher Dashboard, or support. Appear at the bottom of the email.</div>
+        </div>
+        <div class="field">
+          <textarea id="resources" rows="3" placeholder="e.g.&#10;Linear Functions Module Toolkit: [link]&#10;Teacher Dashboard: dashboard.prismsvr.com&#10;Support: support@prismsvr.com"></textarea>
+        </div>
+      </div>
+
+      <!-- 6 · Tech Tips (tutorial only) -->
+      <div class="card tutorial-only" id="section-tech-tips" style="display:none">
+        <div class="card-header">
+          <div class="card-number" id="tech-tips-num">6</div>
+          <div class="card-title">Tech Tips &amp; Logistics</div>
+          <div class="card-desc">Pre-filled with standard tutorial tips. These appear at the bottom of every tutorial email. Edit as needed.</div>
+        </div>
+        <div class="field">
+          <textarea id="tech-tips" rows="9"></textarea>
+        </div>
+      </div>
+
+      <button class="btn-start-over" onclick="startOver()">↺ Start over / New email</button>
+    </div>
+
+    <!-- ══ EMAIL PANE ══════════════════════════════════════ -->
+    <div class="email-pane">
+      <div class="email-pane-header">
+        <div>
+          <div class="email-pane-title">Email Preview</div>
+          <div class="email-pane-sub">Updates as you type · Click Copy to use</div>
+        </div>
+        <button class="btn-copy" id="copy-btn" onclick="copyEmail()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="email-subject" id="subject-preview">Subject line will appear as you fill in the form</div>
+      <textarea id="email-text" readonly placeholder="Fill in the form to generate your email. It will appear here and update as you type."></textarea>
+      <div class="email-pane-footer"></div>
+    </div>
+
+  </div><!-- end app-body -->
+</div><!-- end app -->
+
+<script>
+  // ─── Config ────────────────────────────────────────────
+
+  const AREAS = ['Pacing & Lesson Flow','Clarity of Expectations','Hardware Routines','In-VR Support','Writing & Discourse Routines','CFUs & Revisions'];
+
+  const AREA_INFO = {
+    'Pacing & Lesson Flow':         { desc: 'The lesson moves through each phase at the right pace: Prerequisite Check, Frame, VR, Synthesis, and Debrief. Transitions are smooth and each phase gets the time it needs.', look: 'How long each phase takes, whether transitions are smooth, and whether the debrief gets protected time before the bell.' },
+    'Clarity of Expectations':      { desc: 'Students know exactly what to do before, during, and after each phase without needing to ask.', look: 'Pre-VR instructions, what students do when they finish VR, how transitions are signaled, and whether students can self-direct.' },
+    'Writing & Discourse Routines': { desc: 'The teacher uses structured routines to support student thinking through writing and discussion. Students write before sharing out.', look: 'Whether students write independently using the synthesis prompt before whole-class discussion, pair talk before sharing, and use of the Lesson Slide debrief question.' },
+    'CFUs & Revisions':             { desc: 'The teacher uses CFU data from the Teacher Dashboard to drive instruction: reviewing results, surfacing misconceptions, and having students revise.', look: 'When the CFU is assigned, whether results are reviewed before class ends, how the teacher responds to misconceptions, and whether students revise.' },
+    'Hardware Routines':            { desc: 'Headsets are distributed, used, and collected efficiently, with students taking responsibility for tech logistics.', look: 'Whether tech helpers are designated, how quickly headsets are distributed and collected, and time lost to hardware logistics.' },
+    'In-VR Support':                { desc: 'The teacher actively monitors and supports students during VR by circulating, using the Teacher Dashboard, and conferencing in the moment.', look: 'Whether the teacher circulates, how the Teacher Dashboard is used during VR, and whether students who are stuck get timely support.' }
+  };
+
+  const EXC_PH = {
+    'Pacing & Lesson Flow':         'e.g. The teacher set a timer for VR at 12 minutes, which left a full 10-minute synthesis window. Students had time to write, share, and revise before the bell — no phase was cut short.',
+    'Clarity of Expectations':      'e.g. Before headsets went on, the teacher stated exactly three things: what students would do in VR, what to do when finished, and where to write after. Every transition ran without a single redirect.',
+    'Writing & Discourse Routines': 'e.g. After VR, the teacher gave 3 minutes of silent writing time before anyone spoke. When discussion opened, 12 of 18 students had something to say — and two referenced specific moments from their VR experience to support their reasoning.',
+    'CFUs & Revisions':             'e.g. With 8 minutes left, the teacher projected two contrasting CFU responses and asked students which reasoning was stronger. Students revised their answers before class ended — the discussion was anchored in the concept, not just the procedure.',
+    'Hardware Routines':            'e.g. Two tech helpers distributed all 30 headsets in under 90 seconds. Cleanup was equally smooth — no instructional time was lost at either end of the lesson.',
+    'In-VR Support':                'e.g. The teacher circulated with the Teacher Dashboard on a tablet, stopping at three students who had stalled. Each conversation lasted under 90 seconds, named the specific conceptual sticking point, and got the student back on track.'
+  };
+
+  const FOC_OBS_PH = {
+    'Pacing & Lesson Flow':         'e.g. VR ran to the 28-minute mark, leaving 2 minutes before the bell. Students didn\'t have time to write or discuss — the synthesis was skipped entirely, so the conceptual payoff of the VR experience was left on the table.',
+    'Clarity of Expectations':      'e.g. After students removed headsets, about a third of the class looked unsure of what to do next. Three students asked "what are we doing now?" before the teacher redirected — the transition paused for nearly 3 minutes.',
+    'Writing & Discourse Routines': 'e.g. The class moved straight from VR to whole-class discussion without any writing time. Only 4 of 22 students spoke — the rest had nothing in front of them and stayed silent even when called on.',
+    'CFUs & Revisions':             'e.g. CFU 1 was assigned, but class ended before results were reviewed. Students left without knowing whether their thinking about [concept] was accurate — and the misconception in 40% of responses went unaddressed.',
+    'Hardware Routines':            'e.g. Headset cleanup took nearly 6 minutes — wipes weren\'t accessible and students weren\'t sure where to return controllers. The final instructional segment was cut short as a result.',
+    'In-VR Support':                'e.g. During VR, the teacher stayed at the front desk with the laptop. Two students raised their hands and waited 4-5 minutes before getting support — by then, one had skipped ahead without understanding the key concept.'
+  };
+
+  const FOC_WHY_PH = {
+    'Pacing & Lesson Flow':         'e.g. Synthesis is where students convert the VR experience into transferable understanding — connecting what they saw and did to the underlying concept. Without it, the learning stays tied to the simulation rather than becoming usable mathematical or scientific thinking.',
+    'Clarity of Expectations':      'e.g. When students don\'t know what to do at transitions, momentum stalls and off-task behavior increases — and the teacher ends up spending energy on management instead of instruction. In VR lessons especially, the transition out of immersive experience is a high-risk moment.',
+    'Writing & Discourse Routines': 'e.g. Writing before discussion gives every student — especially those who need processing time — the language to participate. Without it, discussion defaults to the same 4-5 voices, and the rest of the class leaves without having articulated their thinking.',
+    'CFUs & Revisions':             'e.g. CFU data is most powerful when it drives instruction in the moment. Once students leave, the window for targeted revision closes — and the misconception calcifies. The revision moment is where understanding consolidates.',
+    'Hardware Routines':            'e.g. Every minute lost to logistics is a minute not spent on synthesis or debrief — the phases most responsible for conceptual understanding. Unreliable routines also create low-level anxiety that makes it harder for students to transition back into thinking mode.',
+    'In-VR Support':                'e.g. Students who get stuck in VR and wait too long disengage or skip ahead without understanding. The misconception that caused the confusion goes unaddressed and typically resurfaces in the CFU or debrief — harder to correct after the experience is over.'
+  };
+
+  const FOC_MOVE_PH = {
+    'Pacing & Lesson Flow':         'e.g. Set a visible timer for VR (12 minutes) and post it on the board. When it goes off, begin transitioning regardless of where students are — synthesis time is non-negotiable. Decide in advance: "VR ends at [time], synthesis starts at [time]."',
+    'Clarity of Expectations':      'e.g. Before headsets go on, say exactly three things: what students will do in VR, what to do when they finish, and what to write after. Post these on the board as a permanent reference. Give all instructions before a single headset goes on.',
+    'Writing & Discourse Routines': 'e.g. After VR, say "Take 3 minutes — write silently, don\'t talk yet." Use the synthesis prompt from Lesson Slides as the anchor. No discussion until everyone has something on the page. Try partner share before whole-class discussion to double the number of voices.',
+    'CFUs & Revisions':             'e.g. Build a 5-minute CFU review window into your lesson plan before closure. Pull two contrasting responses — one with strong reasoning, one with a misconception — and ask students: "Which reasoning do you agree with and why?" Give 90 seconds for silent revision before sharing.',
+    'Hardware Routines':            'e.g. Assign two permanent tech helpers per class and walk them through the routine before the lesson: distribute from [location], collect to [location], wipes are at [location]. Practice cleanup once with a stopwatch — make the goal visible so students can beat their own time.',
+    'In-VR Support':                'e.g. Open the Teacher Dashboard on a tablet before VR starts. Do a slow loop every 3-4 minutes — use the data to identify who\'s behind, then walk directly to them. Identify 2-3 target students before VR starts (those who struggled with the prerequisite check) and reach them within the first 3 minutes.'
+  };
+
+  const EXC_TIPS = {
+    'Pacing & Lesson Flow': [
+      'The teacher protected [synthesis / debrief] time by [specific action] — students had [X] minutes to [write / discuss / revise] before the bell…',
+      'Because all five phases ran, students arrived at discussion with [specific conceptual understanding] already forming — for example, [student or group]…',
+      'The [Frame / VR / Synthesis / Debrief] phase was especially well-paced: [specific teacher move] meant students could [specific outcome]…'
+    ],
+    'Clarity of Expectations': [
+      'Before headsets went on, the teacher told students exactly [what to do / where to go / what to write] — when VR ended, students immediately [specific action] without any prompt…',
+      'Because expectations were clear from the start, the teacher spent VR time [circulating / conferencing / monitoring the dashboard] rather than managing transitions…',
+      'Transitions were seamless: when [phase] ended, every student [specific action] — the routine was so established that [specific observation]…'
+    ],
+    'Writing & Discourse Routines': [
+      'Students wrote for [X] minutes before any discussion. When share-out began, [specific student or group] connected their VR experience to [concept] by saying…',
+      'The synthesis prompt anchored the debrief — students\' writing showed they were reasoning about [specific concept], not just describing what they saw in VR…',
+      'During discussion, students built on each other\'s ideas: [student A] said [X], and [student B] pushed back by arguing [Y] — this kind of discourse came directly from the VR experience…'
+    ],
+    'CFUs & Revisions': [
+      'After pulling CFU results, the teacher surfaced a misconception about [concept] and used two contrasting responses to drive discussion — students had to decide [specific question]…',
+      'CFU data shaped instruction in real time: when the teacher saw that [students had misconception], they responded by [specific move] rather than moving on…',
+      'Students revised their answers after reviewing CFU results — [specific student or group] changed their thinking about [concept] because…'
+    ],
+    'Hardware Routines': [
+      'Tech helpers distributed all [X] headsets in [time] — the lesson started immediately, which meant students spent that time [in VR / on synthesis] instead of waiting…',
+      'Because routines ran without a hitch, the teacher\'s full attention stayed on [circulating / facilitating / monitoring] — not on logistics…',
+      'Students owned the hardware routine entirely: [specific action by students] meant the teacher never had to redirect for tech management during the lesson…'
+    ],
+    'In-VR Support': [
+      'The teacher used the Teacher Dashboard to identify [student names / a group] who were [stuck / progressing quickly] and responded by [specific move]…',
+      'During VR, the teacher conferred with [student] about [specific moment in the module] — the conversation named the conceptual sticking point directly: [describe]…',
+      'Active circulation meant the teacher caught [misconception / confusion] before the debrief — which meant the whole-class discussion could build on accurate thinking rather than correct it…'
+    ]
+  };
+
+  const EXC_POWER_MOVES = {
+    'Pacing & Lesson Flow':         'Every phase had protected, purposeful time — and because synthesis happened before debrief, students arrived at whole-class discussion with conceptual language already forming. The VR experience became the foundation for thinking, not the end of it.',
+    'Clarity of Expectations':      'Students self-directed through every transition — the teacher\'s upfront clarity freed up cognitive bandwidth for both teacher and students. That freed attention went directly into instruction, conferencing, and facilitating discussion.',
+    'Writing & Discourse Routines': 'Writing before discussion meant every student — including those who need processing time — arrived at share-out with language for their thinking. The VR experience became the raw material for conceptual sense-making, not just a novelty.',
+    'CFUs & Revisions':             'CFU data closed the feedback loop in real time. Student errors became teaching content — the teacher turned individual misconceptions into a whole-class conversation about what\'s actually true and why.',
+    'Hardware Routines':            'Students owned the logistics entirely. Because no instructional time was lost to hardware management, the teacher\'s attention stayed on learning from the first minute to the last.',
+    'In-VR Support':                'The teacher used both the dashboard and active circulation together — identifying who needed support from the data, then delivering it in person. No student waited more than a few minutes, and misconceptions were addressed at the moment of confusion, not after.'
+  };
+
+  const FOC_OBS_TIPS = {
+    'Pacing & Lesson Flow': [
+      'VR ran [X] minutes, leaving only [X] minutes for [synthesis / debrief] — students didn\'t have time to [write / discuss / revise] before the bell…',
+      'The [synthesis / debrief] was [cut short / skipped entirely] — as a result, students left without connecting the VR experience to [the concept]…',
+      'I noticed pacing slipped at [specific moment]: [describe what happened and how much time was lost]…'
+    ],
+    'Clarity of Expectations': [
+      'After [VR / removing headsets], about [X] students looked unsure of what to do next — I saw [specific behavior: hands raised / looking around / off-task]…',
+      'The transition from [phase] to [phase] paused for [X] minutes while students waited for direction — [describe what the teacher was doing during that time]…',
+      '[X] students asked "[specific question]" during [transition] — a signal that [specific expectation] hadn\'t been established before that point…'
+    ],
+    'Writing & Discourse Routines': [
+      'The class moved from VR directly to discussion without writing time — [X] of [Y] students spoke, and the rest stayed silent even when called on…',
+      'During share-out, the same [X] students contributed nearly all the ideas — students who hadn\'t written first didn\'t have language ready for [concept]…',
+      'The synthesis prompt was [not used / introduced mid-discussion] — without a common anchor, the debrief became a retelling of VR rather than reasoning about [concept]…'
+    ],
+    'CFUs & Revisions': [
+      'CFU [1/2] was assigned, but class ended before results were reviewed — [X%] of students had a misconception about [concept] that went unaddressed…',
+      'The teacher saw [describe CFU pattern] in the data, but there wasn\'t time to respond before the bell — students left with inaccurate thinking about [concept]…',
+      'CFU data was available but wasn\'t used instructionally — no revision happened, so students didn\'t know whether their reasoning about [concept] was on track…'
+    ],
+    'Hardware Routines': [
+      'Headset [distribution / cleanup] took [X] minutes because [specific cause: wipes not accessible / no designated helpers / unclear return location]…',
+      'The routine broke down at [specific step] — [describe what students did or didn\'t know to do] — which cost [X] minutes of [synthesis / debrief] time…',
+      '[X] minutes of instructional time were lost to hardware logistics at [start / end] of class — that\'s time that could have gone toward [specific phase]…'
+    ],
+    'In-VR Support': [
+      'During VR, the teacher was positioned [at the front / at the desk] — [X] students with hands raised waited [X] minutes before getting support…',
+      'The Teacher Dashboard was [open on the laptop but the teacher wasn\'t circulating / not open] — which meant [students who were stuck weren\'t identified until late / specific consequence]…',
+      'I noticed [student / group] was confused about [specific VR moment or concept] and waited [X] minutes — by the time they got support, they had [skipped ahead / disengaged]…'
+    ]
+  };
+
+  const FOC_WHY_TIPS = {
+    'Pacing & Lesson Flow': [
+      'Without [synthesis / debrief] time, students leave without connecting the VR experience to [the concept] — the learning stays tied to the simulation rather than becoming transferable understanding…',
+      'The [synthesis / debrief] is where [conceptual understanding / mathematical language / scientific reasoning] develops. When it\'s cut, students miss the phase most responsible for…',
+      'This pattern — if it recurs — means students consistently complete VR but rarely consolidate what they experienced into [concept]. Over time, that gap shows up in…'
+    ],
+    'Clarity of Expectations': [
+      'When students don\'t know what to do at transitions, they [look to peers / go off-task / wait passively] — and the teacher spends energy on management instead of [circulating / facilitating / conferencing]…',
+      'The transition out of VR is especially high-risk: students are shifting from immersive experience back to paper-and-pencil thinking. Without a clear signal, that shift stalls and the synthesis window shrinks…',
+      'When some students self-direct and others don\'t, the teacher ends up redirecting individuals instead of teaching — and the students who most need in-the-moment support don\'t get it…'
+    ],
+    'Writing & Discourse Routines': [
+      'Writing before discussion gives every student — especially those who process more slowly — the language to participate in [concept]-focused conversation. Without it, discussion defaults to [the same few voices / surface impressions from VR]…',
+      'When students go straight from VR to talking, discourse stays at the level of "what I saw" rather than "what it means for [concept]." Writing is what converts experience into reasoning…',
+      'The synthesis prompt is designed to anchor student thinking in [the concept / the key skill]. Without it, the debrief loses its conceptual spine — and students leave having retold VR rather than reasoned about [concept]…'
+    ],
+    'CFUs & Revisions': [
+      'Once students leave, the window for targeted revision closes. The misconception about [concept] tends to persist and resurfaces in [next lesson / unit assessment] — harder to address after the fact…',
+      'CFU data is most powerful in the moment: when students revise their thinking while the VR experience is still fresh, the correction connects directly to [what they did / what they saw in VR]…',
+      'When students don\'t know whether their reasoning about [concept] was accurate, they leave with false confidence — or unresolved confusion — that affects how they engage with the next lesson…'
+    ],
+    'Hardware Routines': [
+      'Every minute lost to logistics is a minute not spent on [synthesis / debrief] — the phases most directly responsible for conceptual understanding. In a 50-minute lesson, [X] minutes lost to cleanup is significant…',
+      'Unpredictable routines create low-level anxiety at both ends of class — students have trouble transitioning [into VR / back to thinking mode] when they don\'t know what\'s expected of them…',
+      'When the teacher manages hardware personally, their attention is split during [distribution / cleanup] — that\'s time they could spend [checking in with students / reviewing CFU data / preparing the synthesis anchor]…'
+    ],
+    'In-VR Support': [
+      'Students who get stuck and wait too long in VR tend to [disengage / skip ahead] — the conceptual confusion that caused the stall goes unaddressed and shows up again in [CFU results / the debrief] when it\'s harder to correct…',
+      'The most teachable moment in a Prisms lesson is often during VR, when students are inside the concept and confusion is immediate and concrete. Waiting too long to reach them means missing that window entirely…',
+      'Without active circulation, the teacher doesn\'t know which students are progressing and which are stuck — the debrief then has to start from scratch rather than building on what students actually understood from VR…'
+    ]
+  };
+
+  const FOC_MOVE_TIPS = {
+    'Pacing & Lesson Flow': [
+      'Set a visible timer for VR ([X] minutes) and post it on the board. When it goes off, begin transitioning regardless of where students are — treat synthesis time as non-negotiable…',
+      'Before class, write the phase sequence and time targets on the board (e.g., VR: 12 min → Write: 3 min → Discuss: 8 min). Having a public plan makes it easier to protect each phase…',
+      'Try shortening VR by [X] minutes to protect synthesis and debrief. Students get enough from [X] minutes in the module to anchor a rich conceptual discussion — the synthesis is where the learning lands…'
+    ],
+    'Clarity of Expectations': [
+      'Before headsets go on, say exactly three things: what students will do in VR, what to do when they finish, and what to write after. Post these on the board. Give all instructions before a single headset goes on…',
+      'Try a visual signal for the VR-to-synthesis transition — a projected timer, a sound cue, or lights. Environmental cues let students self-direct without waiting for a verbal redirect from you…',
+      'Practice the post-VR transition once before the lesson begins: "When I say go, remove your headset, place it on your desk, and open your notebook to [page]." Students who\'ve rehearsed the move don\'t need to be told…'
+    ],
+    'Writing & Discourse Routines': [
+      'After VR, say "Take 3 minutes — write silently, don\'t talk yet." Use the synthesis prompt from Lesson Slides as the anchor. No discussion until everyone has something on the page — even one sentence…',
+      'Try a think-pair-share before whole-class discussion: 2 minutes writing → 1 minute partner share → open it up. This doubles the number of students who arrive at whole-class discussion with articulated thinking…',
+      'During share-out, use cold-call or equity sticks to bring in students whose writing shows strong VR-to-concept connections — surface the reasoning that connects [what they experienced] to [the concept]…'
+    ],
+    'CFUs & Revisions': [
+      'Build a 5-minute CFU review window into your lesson plan before closure — make it non-negotiable. When the timer hits [X minutes before bell], stop and pull results regardless of where the lesson is…',
+      'Choose two contrasting CFU responses in advance (or pull them live): one with strong reasoning, one with a common misconception. Ask: "Which reasoning do you agree with and why?" Give students 1 minute to decide before sharing…',
+      'Try a "revise your answer" moment after reviewing results: 90 seconds of silent revision, then ask 2-3 students what changed in their thinking about [concept] and why — make the revision public…'
+    ],
+    'Hardware Routines': [
+      'Assign two permanent tech helpers per class and walk them through the routine before the lesson: distribute from [location], collect to [location], wipes at [location]. The goal is that you never have to touch a headset during class…',
+      'Create a permanent wipe station at each charging cart. Practice cleanup once with a visible stopwatch — post the target time and let students try to beat it. Public goals make routines feel purposeful rather than arbitrary…',
+      'Try a silent cleanup countdown projected on the board (e.g., 90 seconds). Visual timers reduce the need for verbal redirects and give students a concrete, shared goal to work toward together…'
+    ],
+    'In-VR Support': [
+      'Open the Teacher Dashboard on a tablet before VR starts. Do a slow loop every 3-4 minutes — use the data to identify who\'s behind, then walk directly to them. The goal: no student waits more than 2 minutes for support…',
+      'Before VR begins, identify 2-3 target students — those who struggled with the prerequisite check or last lesson\'s CFU — and reach them within the first 3 minutes. Don\'t wait for them to raise their hands…',
+      'During your circulation loop, try one probing question per student you check in with: "What did you notice when [specific VR moment]?" This surfaces conceptual confusion before it becomes a roadblock — and costs less than 60 seconds per student…'
+    ]
+  };
+
+  const OPENINGS = [
+    'Thank you for welcoming me into your classroom and for your willingness to try new instructional routines with Prisms. It was a joy working alongside you and your students.',
+    'It was such a pleasure being in your classroom today. The energy between you and your students was palpable, and I am grateful you trusted me to partner with you in this work.',
+    'Thank you for having me today. Watching you and your students engage with Prisms was a real highlight. I can see how much intentionality you bring to your practice.',
+    'What a visit! Thank you for opening your classroom and for your commitment to bringing your students rich, immersive learning experiences. I left genuinely inspired.',
+    'Thank you for the warm welcome today. It is always a privilege to be in your classroom, and I appreciate your openness to trying new things and your dedication to your students.'
+  ];
+
+  const TUTORIAL_OPENINGS = [
+    'Thank you for welcoming me into your classroom for your Prisms Tutorial Coaching! It was a joy working alongside you and your students as they explored VR learning for the first time.',
+    'What a milestone! Thank you for your openness and enthusiasm today. Watching your students step into VR for the first time was genuinely exciting, and I am so glad I got to be part of it.',
+    'Thank you for having me today for your Tutorial Coaching session. The curiosity and energy your students brought to their first VR experience was a real highlight to witness.',
+    'It was such a pleasure supporting your Tutorial Day. The willingness you brought to trying something new — and the excitement your students matched it with — made this a visit I will not forget.',
+    'Thank you for the warm welcome today. Tutorial Day is always special, and your classroom was no exception. I left feeling genuinely inspired by what you and your students are building together.'
+  ];
+
+  const TUTORIAL_ROUTINES = [
+    { id: 'tr-1', label: 'Used tech helpers to distribute and collect headsets', email: 'Used tech helpers to distribute and collect headsets, rather than managing logistics alone' },
+    { id: 'tr-2', label: 'Set Autolaunch and Language Features', email: 'Configured Autolaunch and Language Features to support student access and independence in VR' },
+    { id: 'tr-3', label: 'Used the Teacher Dashboard to monitor student progress during VR', email: 'Used the Teacher Dashboard to monitor student progress and identify who needed support during VR' },
+    { id: 'tr-4', label: 'Students worked together to complete the tutorial synthesis', email: 'Students collaborated to complete the tutorial synthesis activity, consolidating their VR experience' },
+    { id: 'tr-5', label: 'Held a Debrief conversation using Module Lesson Slides on at least one key skill from VR', email: 'Held a Debrief conversation using the Module Lesson Slides, anchoring the discussion to at least one key skill students encountered in VR' }
+  ];
+
+  const TECH_TIPS_DEFAULT = `* Wipe headsets down with alcohol-based wipes to ensure sanitation and good upkeep.
+* Remind students to keep controllers with their headset to avoid them getting mixed up.
+* Remind students to turn off headsets (hold the power button for 3 seconds or until they see a blue light) so they are logged out and batteries are maintained.
+* Use tech helpers to distribute and collect headsets, especially if you are the only teacher in the room.
+* Use Kinesthetic Skill Building modules (mini-modules) to have students practice key foundational skills.
+* After headsets are fully charged and turned off, turn the charging carts off to prolong battery life.
+* If students complain of headaches, try three solutions: (1) adjust lenses to fix blurriness, (2) adjust the headset strap so it fits comfortably but is not too tight, (3) adjust brightness in headset settings.`;
+
+  // ─── Module / Skill Builder lists ──────────────────────
+  const MODULES_MATH = {
+    label: 'Math',
+    items: ['Area & Circumference','Percents','Ratios','Equations - Developing','Probability','Representing Data','Equations - Solidifying','Properties of Exponents & Scientific Notation','Rigid Transformations','Fractions','Pythagorean Theorem','Surface Area','Functions','Rates of Change - Developing','Transforming Triangles','Inequalities','Rates of Change - Solidifying','Inequalities - Developing','Rational Operations','Absolute Value Functions','Linear Functions','Systems of Linear Equations','Exponential Functions','Linear Regression','Systems of Linear Inequalities','Factoring Quadratics','Quadratics','Two-Way Frequency Tables','Linear Equations','Roots & Rational Exponents','Circle Equations','Solids of Rotation','Trigonometry','Congruence & Similarity','Transformations','Distance Formula','Transversals','Complex Numbers','Logarithms','Polar Coordinates','Conic Sections','Matrices','Vectors','Function Transformations','Periodic Functions','Instantaneous & Average Rates of Change','The Normal Distribution']
+  };
+  const MODULES_SCIENCE = {
+    label: 'Science',
+    items: ['Biomolecules','Cell Structure & Function','Cellular Energy','DNA Structure & Function','Ecology','Evolution','Genetics','Mitosis','Acids & Bases','Atomic Structure & Electron Configuration','Bonds & Intermolecular Forces','Chemical Reactions','Thermochemistry','Water Polarity & Hydrogen Bonding','1-D Kinematics',"Newton's Second Law",'Force & Motion','Phase Changes','Wave Energy','Energy Transformations','Biological Levels of Organization','The Nitrogen Cycle','Growth of an Organism','Homeostasis','The Scientific Method','Tectonic Plates','Earth & The Sun','The Rock Cycle']
+  };
+  const MODULES_OTHER = { label: 'Other', items: ['Tutorial Day'] };
+
+  const SKILL_BUILDERS_MATH = {
+    label: 'Math',
+    items: ['Algebraic Manipulation','Fraction Operations','Quadratic Functions','Angles','Fractions, Decimals & Percents','Rate of Change','Calculating Percents','Identifying Functions','Ratios & Unit Rates','Completing the Square','Identifying & Creating Functions','Solving Linear Equations & Inequalities','Creating Linear Equations','Integer Operations','Solving Systems of Linear Equations','Coordinate Plane','Nets & Surface Area','Unit Conversions','Decimal Operations','Order of Operations','Volume','Distributive Property','Properties of Exponents','Factoring & Polynomial Division','Proportions']
+  };
+  const SKILL_BUILDERS_SCIENCE = {
+    label: 'Science',
+    items: ['Atomic Bonds','Food Webs','Meiosis','Atomic Models','Balancing Chemical Equations','Organelles','DNA Replication','Transcription & Translation']
+  };
+
+  // ─── State ─────────────────────────────────────────────
+  let excSelected = new Set();
+  let focSelected = new Set();
+  let visitType = 'coaching';
+  let updatingProgrammatically = false;
+
+  // ─── Init ───────────────────────────────────────────────
+  document.getElementById('visit-date').valueAsDate = new Date();
+
+  document.addEventListener('change', e => {
+    if (e.target.name === 'opening') {
+      document.querySelectorAll('.opening-option').forEach(el => el.classList.remove('active'));
+      e.target.closest('.opening-option').classList.add('active');
+      document.getElementById('custom-opening-field').style.display = e.target.value === 'custom' ? 'block' : 'none';
+      updatePreview();
+    }
+  });
+
+  // Live update on any form input
+  document.getElementById('form-pane').addEventListener('input', e => {
+    if (!e.target.closest('#email-text')) updatePreview();
+  });
+
+  // Tab key moves focus to next/prev field instead of inserting a tab character
+  document.getElementById('form-pane').addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || e.target.tagName !== 'TEXTAREA') return;
+    e.preventDefault();
+    const sel = 'input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])';
+    const all = Array.from(document.getElementById('form-pane').querySelectorAll(sel))
+      .filter(el => el.offsetParent !== null);
+    const idx = all.indexOf(e.target);
+    const next = e.shiftKey ? all[idx - 1] : all[idx + 1];
+    if (next) next.focus();
+  });
+
+  // ─── Collapsible cards ──────────────────────────────────
+  function initCollapsibleCards() {
+    document.querySelectorAll('#form-pane .card').forEach((card, i) => {
+      const header = card.querySelector('.card-header');
+      if (!header) return;
+      const chevron = document.createElement('span');
+      chevron.className = 'card-chevron';
+      chevron.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+      header.appendChild(chevron);
+      // On mobile, collapse all cards except the first
+      if (window.innerWidth <= 820 && i > 0) card.classList.add('collapsed');
+      header.addEventListener('click', () => card.classList.toggle('collapsed'));
+    });
+  }
+
+  // ─── Init ───────────────────────────────────────────────
+  function init() {
+    buildTutorialSection();
+    setupAutocomplete('module-rec', 'module-ac', [MODULES_MATH, MODULES_SCIENCE, MODULES_OTHER]);
+    setupAutocomplete('sb-rec', 'sb-ac', [SKILL_BUILDERS_MATH, SKILL_BUILDERS_SCIENCE]);
+    if (!restoreDraft()) { buildGrids(); setVisitType('coaching'); }
+    initCollapsibleCards();
+  }
+  init();
+
+  // ─── Visit Type ─────────────────────────────────────────
+  function setVisitType(type) {
+    visitType = type;
+    document.getElementById('toggle-coaching').classList.toggle('active', type === 'coaching');
+    document.getElementById('toggle-tutorial').classList.toggle('active', type === 'tutorial');
+    document.querySelectorAll('.coaching-only').forEach(el => el.style.display = type === 'coaching' ? '' : 'none');
+    document.getElementById('section-tutorial').style.display = type === 'tutorial' ? '' : 'none';
+    document.getElementById('section-tech-tips').style.display = type === 'tutorial' ? '' : 'none';
+    document.getElementById('next-steps-num').textContent = '6';
+    document.getElementById('resources-num').textContent = type === 'coaching' ? '7' : '5';
+    const ttNum = document.getElementById('tech-tips-num');
+    if (ttNum) ttNum.textContent = '6';
+
+    // Swap opening paragraphs
+    const pool = type === 'tutorial' ? TUTORIAL_OPENINGS : OPENINGS;
+    const container = document.getElementById('opening-options');
+    const radios = container.querySelectorAll('.opening-option:not(:last-child) span');
+    radios.forEach((span, i) => { if (pool[i]) span.textContent = pool[i]; });
+
+    // Reset opening selection to first
+    const firstRadio = container.querySelector('input[value="0"]');
+    if (firstRadio) {
+      firstRadio.checked = true;
+      container.querySelectorAll('.opening-option').forEach(el => el.classList.remove('active'));
+      firstRadio.closest('.opening-option').classList.add('active');
+    }
+    document.getElementById('custom-opening-field').style.display = 'none';
+
+    if (type === 'tutorial') {
+      document.getElementById('highlights-title').textContent = 'Tutorial Highlights';
+      document.getElementById('highlights-desc').textContent = 'Share a specific moment that stood out — a student reaction, a teacher win, or a detail that captures the energy of the visit.';
+      document.getElementById('highlights-label').textContent = 'What stood out?';
+      // Pre-fill resources and tech tips for tutorial (only if empty)
+      const res = document.getElementById('resources');
+      if (res && !res.value) res.value = '* Complete the tutorial with your remaining class periods and plan for your first content module!\n* Teacher Handbook: prismsvr.com/handbook\n* Science Module Toolkits and Math Module Toolkits: prismsvr.com/toolkits\n* Teacher Dashboard: dashboard.prismsvr.com\n* Reach out to support@prismsvr.com if you need any assistance with technology.';
+      const tt = document.getElementById('tech-tips');
+      if (tt && !tt.value) tt.value = TECH_TIPS_DEFAULT;
+    } else {
+      document.getElementById('highlights-title').textContent = 'Highlights';
+      document.getElementById('highlights-desc').textContent = 'Describe one or two impactful moments you observed. Ground it in a specific student or teacher action and explain why it mattered for learning.';
+      document.getElementById('highlights-label').textContent = 'Impactful moment(s)';
+      // Pre-fill coaching resources with support info (only if empty)
+      const res = document.getElementById('resources');
+      if (res && !res.value) res.value = '* Reach out to support@prismsvr.com if you need any assistance with technology.';
+    }
+    updatePreview();
+  }
+
+  // ─── Tutorial Outcomes ──────────────────────────────────
+  function buildTutorialSection() {
+    const container = document.getElementById('tutorial-routines');
+    container.innerHTML = '';
+    TUTORIAL_ROUTINES.forEach(routine => {
+      const block = document.createElement('div');
+      block.className = 'outcome-block active'; // pre-checked = active styling
+      block.id = 'routine-block-' + routine.id;
+      block.innerHTML = `
+        <label class="outcome-check-row">
+          <input type="checkbox" id="${routine.id}" checked onchange="toggleRoutine('${routine.id}')" />
+          <span class="outcome-label">${routine.label}</span>
+        </label>
+        <div class="outcome-obs visible" id="obs-${routine.id}">
+          <div class="field" style="margin-top:8px">
+            <textarea id="obs-text-${routine.id}" rows="2" placeholder="Optional: add a specific observation about how this went..."></textarea>
+          </div>
+        </div>`;
+      container.appendChild(block);
+    });
+  }
+
+  function toggleRoutine(id) {
+    const cb = document.getElementById(id);
+    const block = document.getElementById('routine-block-' + id);
+    const obs = document.getElementById('obs-' + id);
+    block.classList.toggle('active', cb.checked);
+    obs.classList.toggle('visible', cb.checked);
+    updatePreview();
+  }
+
+  // ─── Tooltip (area info modal) ──────────────────────────
+  function showTooltip(area) {
+    const info = AREA_INFO[area]; if (!info) return;
+    document.getElementById('tt-title').textContent = area;
+    document.getElementById('tt-desc').textContent = info.desc;
+    document.getElementById('tt-look').textContent = info.look;
+    document.getElementById('tooltip-overlay').classList.add('open');
+  }
+  function closeTooltip() { document.getElementById('tooltip-overlay').classList.remove('open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeTooltip(); closeAllFieldTips(); } });
+
+  // ─── Field tip buttons ──────────────────────────────────
+  function toggleFieldTip(panelId, btnEl) {
+    const panel = document.getElementById(panelId); if (!panel) return;
+    const isOpen = panel.classList.contains('open');
+    document.querySelectorAll('.tip-panel.open').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.tip-btn.active').forEach(b => b.classList.remove('active'));
+    if (!isOpen) { panel.classList.add('open'); btnEl.classList.add('active'); }
+  }
+  function closeAllFieldTips() {
+    document.querySelectorAll('.tip-panel.open').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.tip-btn.active').forEach(b => b.classList.remove('active'));
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.tip-btn') && !e.target.closest('.tip-panel')) closeAllFieldTips();
+  });
+  function makeTipPanel(panelId, tips, powerMove) {
+    return `<div class="tip-panel" id="${panelId}">
+      <div class="tip-header">💡 Sentence starters</div>
+      <div class="tip-be-specific">Be specific: include timing, student names, or a direct example.</div>
+      <ul>${tips.map(t => `<li>${t}</li>`).join('')}</ul>
+      ${powerMove ? `<div class="power-move"><span class="power-move-label">⭐ Power move</span>${powerMove}</div>` : ''}
+    </div>`;
+  }
+
+  // ─── Checkbox Grids ─────────────────────────────────────
+  function buildGrids() {
+    buildGrid('exc-grid', excSelected, renderExcDetails, false);
+    buildGrid('foc-grid', focSelected, renderFocDetails, true);
+  }
+  function buildGrid(gridId, selSet, renderFn, singleSelect) {
+    const grid = document.getElementById(gridId); grid.innerHTML = '';
+    AREAS.forEach(area => {
+      const pill = document.createElement('label');
+      pill.className = 'cb-pill' + (selSet.has(area) ? ' active' : '');
+      const cb = document.createElement('input'); cb.type = 'checkbox';
+      if (selSet.has(area)) cb.checked = true;
+      cb.addEventListener('change', e => {
+        if (e.target.checked && singleSelect) {
+          selSet.clear();
+          grid.querySelectorAll('input[type="checkbox"]').forEach(c => {
+            if (c !== cb) { c.checked = false; c.closest('label').classList.remove('active'); }
+          });
+        }
+        e.target.checked ? selSet.add(area) : selSet.delete(area);
+        pill.classList.toggle('active', e.target.checked);
+        renderFn(); updatePreview();
+      });
+      const lbl = document.createElement('span'); lbl.className = 'cb-label'; lbl.textContent = area;
+      const infoBtn = document.createElement('button'); infoBtn.className = 'info-btn'; infoBtn.type = 'button';
+      infoBtn.title = 'Learn more about ' + area;
+      infoBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+      infoBtn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); showTooltip(area); });
+      pill.appendChild(cb); pill.appendChild(lbl); pill.appendChild(infoBtn);
+      grid.appendChild(pill);
+    });
+    renderFn();
+  }
+
+  function renderExcDetails() {
+    const container = document.getElementById('exc-details');
+    const saved = {};
+    excSelected.forEach(area => { const el = document.getElementById('exc-obs-' + slug(area)); if (el) saved[slug(area)] = el.value; });
+    container.innerHTML = '';
+    excSelected.forEach(area => {
+      const id = slug(area); const prev = saved[id] || '';
+      const ph = EXC_PH[area] || ''; const tips = EXC_TIPS[area] || []; const pm = EXC_POWER_MOVES[area] || '';
+      const tipId = 'tip-exc-obs-' + id;
+      const block = document.createElement('div'); block.className = 'area-block';
+      block.innerHTML = `<div class="area-block-title">✓ ${area}</div>
+        <div class="field">
+          <div class="label-row"><label>What did the teacher do well?</label>${tips.length ? `<button type="button" class="tip-btn" onclick="toggleFieldTip('${tipId}',this)" title="Sentence starters">?</button>` : ''}</div>
+          ${tips.length ? makeTipPanel(tipId, tips, pm) : ''}
+          <textarea id="exc-obs-${id}" rows="2" placeholder="${ph}">${prev}</textarea>
+          <div class="hint be-specific-hint">Be specific: include timing, student names, or a direct example.</div>
+        </div>`;
+      container.appendChild(block);
+    });
+  }
+
+  function renderFocDetails() {
+    const container = document.getElementById('foc-details');
+    const saved = {};
+    focSelected.forEach(area => {
+      const id = slug(area);
+      saved[id] = { obs: document.getElementById('foc-obs-'+id)?.value||'', why: document.getElementById('foc-why-'+id)?.value||'', move: document.getElementById('foc-move-'+id)?.value||'' };
+    });
+    container.innerHTML = '';
+    focSelected.forEach(area => {
+      const id = slug(area); const prev = saved[id] || {obs:'',why:'',move:''};
+      const ot = FOC_OBS_TIPS[area]||[]; const wt = FOC_WHY_TIPS[area]||[]; const mt = FOC_MOVE_TIPS[area]||[];
+      const opId='tip-foc-obs-'+id, wpId='tip-foc-why-'+id, mpId='tip-foc-move-'+id;
+      const aQ = area.replace(/&/g,'and');
+      const block = document.createElement('div'); block.className = 'area-block focus-block';
+      block.innerHTML = `<div class="area-block-title">→ ${area}</div>
+        <div class="field">
+          <div class="label-row"><label>What did you observe?</label>${ot.length?`<button type="button" class="tip-btn" onclick="toggleFieldTip('${opId}',this)">?</button>`:''}</div>
+          ${ot.length?makeTipPanel(opId,ot):''}
+          <div class="sentence-starter">During the lesson, I noticed…</div>
+          <textarea id="foc-obs-${id}" rows="2" placeholder="${FOC_OBS_PH[area]||''}">${prev.obs}</textarea>
+          <div class="hint be-specific-hint">Be specific: include timing, student actions, or a direct example.</div>
+        </div>
+        <div class="field">
+          <div class="label-row"><label>Why does this matter?</label>${wt.length?`<button type="button" class="tip-btn" onclick="toggleFieldTip('${wpId}',this)">?</button>`:''}</div>
+          ${wt.length?makeTipPanel(wpId,wt):''}
+          <div class="sentence-starter">This matters because…</div>
+          <textarea id="foc-why-${id}" rows="2" placeholder="${FOC_WHY_PH[area]||''}">${prev.why}</textarea>
+          <div class="hint be-specific-hint">Be specific: include timing, student actions, or a direct example.</div>
+        </div>
+        <div class="field">
+          <div class="label-row"><label>Concrete move to try next lesson</label>${mt.length?`<button type="button" class="tip-btn" onclick="toggleFieldTip('${mpId}',this)">?</button>`:''}</div>
+          ${mt.length?makeTipPanel(mpId,mt):''}
+          <div class="sentence-starter">In the next lesson, let's try:</div>
+          <textarea id="foc-move-${id}" rows="2" placeholder="${FOC_MOVE_PH[area]||''}">${prev.move}</textarea>
+          <div class="hint be-specific-hint">Be specific: include timing, student actions, or a direct example.</div>
+        </div>`;
+      container.appendChild(block);
+    });
+  }
+
+  // ─── Autocomplete ───────────────────────────────────────
+  function setupAutocomplete(inputId, dropdownId, groups) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    let highlightIdx = -1;
+    let allItems = [];
+    groups.forEach(g => g.items.forEach(item => allItems.push({ label: g.label, item })));
+
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      dropdown.innerHTML = '';
+      highlightIdx = -1;
+      if (!q) { dropdown.classList.remove('open'); updatePreview(); return; }
+      const matches = allItems.filter(x => x.item.toLowerCase().includes(q));
+      if (!matches.length) { dropdown.classList.remove('open'); updatePreview(); return; }
+      let lastLabel = '';
+      matches.slice(0, 12).forEach((m, i) => {
+        if (m.label !== lastLabel) {
+          const gl = document.createElement('div'); gl.className = 'ac-group-label'; gl.textContent = m.label;
+          dropdown.appendChild(gl); lastLabel = m.label;
+        }
+        const item = document.createElement('div'); item.className = 'ac-item'; item.textContent = m.item;
+        item.dataset.idx = i;
+        item.addEventListener('mousedown', e => { e.preventDefault(); input.value = m.item; dropdown.classList.remove('open'); updatePreview(); });
+        dropdown.appendChild(item);
+      });
+      dropdown.classList.add('open');
+    });
+
+    input.addEventListener('keydown', e => {
+      const items = dropdown.querySelectorAll('.ac-item');
+      if (e.key === 'ArrowDown') { e.preventDefault(); highlightIdx = Math.min(highlightIdx+1, items.length-1); items.forEach((it,i) => it.classList.toggle('highlighted', i===highlightIdx)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); highlightIdx = Math.max(highlightIdx-1, 0); items.forEach((it,i) => it.classList.toggle('highlighted', i===highlightIdx)); }
+      else if ((e.key === 'Enter' || e.key === 'Tab') && highlightIdx >= 0) { e.preventDefault(); input.value = items[highlightIdx].textContent; dropdown.classList.remove('open'); updatePreview(); }
+      else if (e.key === 'Escape') { dropdown.classList.remove('open'); }
+    });
+
+    input.addEventListener('blur', () => setTimeout(() => dropdown.classList.remove('open'), 150));
+  }
+
+  // ─── Helpers ────────────────────────────────────────────
+  function slug(str) { return str.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+  function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  function lcFirst(str) { if (!str) return str; return str.charAt(0).toLowerCase() + str.slice(1); }
+  function toYou(str) {
+    if (!str) return str;
+    return str.replace(/\bThe teacher's\b/g,'Your').replace(/\bthe teacher's\b/g,'your').replace(/\bThe teacher\b/g,'You').replace(/\bthe teacher\b/g,'you');
+  }
+  function prep(str) { return lcFirst(toYou(str.replace(/\.+$/, ''))); }
+
+  // ─── Build email lines ──────────────────────────────────
+  function buildSubject() {
+    const teacher = val('teacher-name'); const school = val('school'); const date = formatDate(val('visit-date'));
+    const parts = [teacher, school, date].filter(Boolean);
+    const prefix = visitType === 'tutorial' ? 'Post-Tutorial Coaching Recap' : 'Classroom Visit Recap';
+    return parts.length ? prefix + ': ' + parts.join(', ') : prefix;
+  }
+
+  function buildEmail() {
+    const teacher = val('teacher-name'); const coach = val('coach-name');
+    const highlights = val('highlights'); const moduleRec = val('module-rec');
+    const sbRec = val('sb-rec'); const resources = val('resources');
+    const selectedOpening = document.querySelector('input[name="opening"]:checked')?.value;
+    const openingText = selectedOpening === 'custom' ? (val('custom-opening-text') || OPENINGS[0]) : (OPENINGS[parseInt(selectedOpening)] || OPENINGS[0]);
+    const lines = [];
+
+    lines.push('Hello ' + (teacher || '[Teacher Name]') + ',');
+    lines.push('');
+    lines.push(openingText);
+    lines.push('');
+
+    if (highlights) {
+      if (visitType === 'tutorial') {
+        lines.push('TUTORIAL HIGHLIGHTS');
+      } else {
+        lines.push('HIGHLIGHTS');
+      }
+      lines.push(toYou(highlights));
+      lines.push('');
+    }
+
+    if (visitType === 'coaching') {
+      if (excSelected.size > 0) {
+        lines.push('AREAS OF EXCELLENCE');
+        lines.push("A few highlights from today's lesson:");
+        lines.push('');
+        excSelected.forEach(area => {
+          const obs = val('exc-obs-' + slug(area));
+          lines.push('* ' + area + ': ' + (obs ? toYou(obs) : '[observation]'));
+        });
+        lines.push('');
+      }
+      if (focSelected.size > 0) {
+        const focArr = Array.from(focSelected);
+        lines.push('AREA OF FOCUS');
+        lines.push('One area to prioritize for the next lesson:');
+        lines.push('');
+        focArr.forEach((area, i) => {
+          const obs = val('foc-obs-' + slug(area)); const why = val('foc-why-' + slug(area)); const move = val('foc-move-' + slug(area));
+          lines.push('→ ' + area);
+          let s = '';
+          if (obs) s += 'During the lesson, I noticed ' + prep(obs) + '.';
+          if (why) s += ' This matters because ' + prep(why) + '.';
+          if (move) s += " In the next lesson, let's try: " + toYou(move.replace(/\.+$/, '')) + '.';
+          if (s) lines.push(s);
+          if (i < focArr.length - 1) lines.push('');
+        });
+        lines.push('');
+      }
+    }
+
+    if (visitType === 'tutorial') {
+      const checkedRoutines = TUTORIAL_ROUTINES.filter(r => document.getElementById(r.id)?.checked);
+      if (checkedRoutines.length > 0) {
+        lines.push('KEY INSTRUCTIONAL ROUTINES');
+        lines.push('For each class, we had the most successful lesson by following these steps:');
+        lines.push('');
+        checkedRoutines.forEach(r => {
+          const obs = val('obs-text-' + r.id);
+          lines.push('* ' + r.email + (obs ? ' — ' + lcFirst(obs.replace(/\.+$/, '')) + '.' : '.'));
+        });
+        lines.push('');
+      }
+    }
+
+    if (visitType === 'coaching') {
+      if (moduleRec || sbRec) {
+        lines.push('NEXT STEPS');
+        if (moduleRec) lines.push('* Content Module: ' + moduleRec);
+        if (sbRec) lines.push('* Skill Builder: ' + sbRec);
+        lines.push('');
+      }
+      lines.push('RESOURCES');
+      lines.push(resources || 'For tech questions, contact support@prismsvr.com');
+      lines.push('');
+    } else {
+      // Tutorial resources — pre-filled in textarea, coaches can add/edit
+      lines.push('RESOURCES AND NEXT STEPS');
+      lines.push(resources || '* Complete the tutorial with your remaining class periods and plan for your first content module!\n* Teacher Handbook: prismsvr.com/handbook\n* Science Module Toolkits and Math Module Toolkits: prismsvr.com/toolkits\n* Teacher Dashboard: dashboard.prismsvr.com\n* Reach out to support@prismsvr.com if you need any assistance with technology.');
+      lines.push('');
+      const techTips = val('tech-tips') || TECH_TIPS_DEFAULT;
+      lines.push('TECH TIPS & LOGISTICS');
+      lines.push(techTips);
+      lines.push('');
+    }
+    lines.push('Thank you for your partnership as we continue refining Prisms together. Looking forward to our next visit!');
+    lines.push('');
+    lines.push('Yours in partnership,');
+    lines.push(coach || '[Coach Name]');
+
+    return lines.join('\n');
+  }
+
+  // ─── Autosave ───────────────────────────────────────────
+  const SAVE_KEY = 'prisms-email-draft';
+  const SIMPLE_FIELDS = ['teacher-name','school','coach-name','visit-date','highlights','module-rec','sb-rec','resources','custom-opening-text','tech-tips'];
+
+  function saveDraft() {
+    const draft = {
+      visitType,
+      fields: {},
+      opening: document.querySelector('input[name="opening"]:checked')?.value || '0',
+      excSelected: Array.from(excSelected),
+      focSelected: Array.from(focSelected),
+      excObs: {}, focObs: {}, focWhy: {}, focMove: {},
+      tutorialObs: {}, tutorialChecked: {}
+    };
+    SIMPLE_FIELDS.forEach(id => { const el = document.getElementById(id); if (el) draft.fields[id] = el.value; });
+    excSelected.forEach(area => { const id = slug(area); const el = document.getElementById('exc-obs-'+id); if (el) draft.excObs[id] = el.value; });
+    focSelected.forEach(area => { const id = slug(area); ['obs','why','move'].forEach(f => { const el = document.getElementById('foc-'+f+'-'+id); if (el) draft['foc'+f.charAt(0).toUpperCase()+f.slice(1)][id] = el.value; }); });
+    TUTORIAL_ROUTINES.forEach(r => { const cb = document.getElementById(r.id); const ta = document.getElementById('obs-text-'+r.id); draft.tutorialChecked[r.id] = cb?.checked ?? true; draft.tutorialObs[r.id] = ta?.value || ''; });
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(draft)); } catch(e) {}
+  }
+
+  function restoreDraft() {
+    let draft;
+    try { draft = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch(e) {}
+    if (!draft) return false;
+    if (draft.visitType) setVisitType(draft.visitType);
+    SIMPLE_FIELDS.forEach(id => { const el = document.getElementById(id); if (el && draft.fields[id] != null) el.value = draft.fields[id]; });
+    // Restore opening selection
+    const openingVal = draft.opening || '0';
+    const radio = document.querySelector(`input[name="opening"][value="${openingVal}"]`);
+    if (radio) { radio.checked = true; document.querySelectorAll('.opening-option').forEach(el => el.classList.remove('active')); radio.closest('.opening-option').classList.add('active'); }
+    document.getElementById('custom-opening-field').style.display = openingVal === 'custom' ? 'block' : 'none';
+    // Restore checkboxes
+    if (draft.excSelected) { excSelected = new Set(draft.excSelected); }
+    if (draft.focSelected) { focSelected = new Set(draft.focSelected); }
+    buildGrids();
+    // Restore obs text after grids are built
+    if (draft.excObs) Object.entries(draft.excObs).forEach(([id, v]) => { const el = document.getElementById('exc-obs-'+id); if (el) el.value = v; });
+    if (draft.focObs) Object.entries(draft.focObs).forEach(([id, v]) => { const el = document.getElementById('foc-obs-'+id); if (el) el.value = v; });
+    if (draft.focWhy) Object.entries(draft.focWhy).forEach(([id, v]) => { const el = document.getElementById('foc-why-'+id); if (el) el.value = v; });
+    if (draft.focMove) Object.entries(draft.focMove).forEach(([id, v]) => { const el = document.getElementById('foc-move-'+id); if (el) el.value = v; });
+    // Restore tutorial routines
+    TUTORIAL_ROUTINES.forEach(r => {
+      const checked = draft.tutorialChecked?.[r.id] ?? true;
+      const cb = document.getElementById(r.id); if (cb) cb.checked = checked;
+      const block = document.getElementById('routine-block-'+r.id); if (block) block.classList.toggle('active', checked);
+      const obs = document.getElementById('obs-'+r.id); if (obs) obs.classList.toggle('visible', checked);
+      const ta = document.getElementById('obs-text-'+r.id); if (ta) ta.value = draft.tutorialObs?.[r.id] || '';
+    });
+    return true;
+  }
+
+  // ─── Live preview ───────────────────────────────────────
+  function updatePreview() {
+    updatingProgrammatically = true;
+    document.getElementById('subject-preview').textContent = buildSubject();
+    document.getElementById('email-text').value = buildEmail();
+    updatingProgrammatically = false;
+    saveDraft();
+  }
+
+  // ─── Copy ───────────────────────────────────────────────
+  function copyEmail() {
+    const missing = [];
+    if (!val('teacher-name')) missing.push('Teacher Name');
+    if (!val('coach-name')) missing.push('Your Name (Coach)');
+    if (missing.length && !confirm('Heads up — ' + missing.join(' and ') + ' is blank. The email will include placeholder text. Copy anyway?')) return;
+    const text = document.getElementById('email-text').value;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 16 4 11"/></svg> Copied!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';
+      }, 2500);
+    });
+  }
+
+  // ─── Start Over ─────────────────────────────────────────
+  function startOver() {
+    if (!confirm('Start over? This will clear everything.')) return;
+    try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+    ['teacher-name','school','coach-name','highlights','module-rec','sb-rec','resources','custom-opening-text'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('visit-date').valueAsDate = new Date();
+    const first = document.querySelector('input[name="opening"][value="0"]');
+    if (first) { first.checked = true; document.querySelectorAll('.opening-option').forEach(el => el.classList.remove('active')); first.closest('.opening-option').classList.add('active'); }
+    document.getElementById('custom-opening-field').style.display = 'none';
+    excSelected.clear(); focSelected.clear();
+    buildGrids();
+    TUTORIAL_ROUTINES.forEach(r => {
+      const cb = document.getElementById(r.id); if (cb) cb.checked = true; // reset to pre-checked
+      const block = document.getElementById('routine-block-'+r.id); if (block) block.classList.add('active');
+      const obs = document.getElementById('obs-'+r.id); if (obs) obs.classList.add('visible');
+      const ta = document.getElementById('obs-text-'+r.id); if (ta) ta.value = '';
+    });
+    const tt = document.getElementById('tech-tips'); if (tt) tt.value = '';
+    setVisitType('coaching');
+    updatePreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
